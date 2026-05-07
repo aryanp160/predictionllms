@@ -13,43 +13,31 @@
 This repo makes use of the state-of-art Deep Learning algorithm to predict the price of Bitcoin, which has the potential to generalize to other cryptocurrency. It leverages models such as CNN and RNN implemented by [Keras](https://github.com/keras-team/keras) running on top of [Tensorflow](https://github.com/tensorflow/tensorflow). You can find more detailed illustration in this [blog post](https://blog.goodaudience.com/predicting-cryptocurrency-price-with-tensorflow-and-keras-e1674b0dc58a).
 
 ### Getting Started
-To run this repo, be sure to install the following environment and library:
+This repo has been modernized for Python 3.x and TensorFlow 2.x using Binance historical BTC/USDT data. Install dependencies from `requirements.txt`.
 
-1. Python 2.7
-2. Tensorflow=1.2.0
-3. Keras=2.1.1
-4. Pandas=0.20.3
-5. Numpy=1.13.3
-6. h5py=2.7.0
-7. sklearn=0.19.1
+### New End-to-End Pipeline
+1. `python data_fetch.py`
+   - downloads last 6 months of BTC/USDT OHLCV from Binance for 15m and 1h intervals.
+2. `python feature_engineering.py`
+   - builds technical indicators and merges 15m/1h features into `data/btc_usdt_15m_features.csv`.
+3. `python train_models.py`
+   - trains CNN, LSTM, and GRU models, saves checkpoints, scalers, and metrics to `models/`.
+4. `python predict_plot.py`
+   - loads trained models, produces ensemble forecasts, confidence bands, and saves charts/CSV to `result/`.
 
-### File Illustration
-#### There are currently three different models:
-1. LSTM.py
-2. GRU.py
-3. CNN.py (1 dimensional CNN)
-
-#### The validation result is plotted in:
-1. Plot_LSTM.ipynb
-2. Plot_GRU.ipynb
-3. Plot_CNN.ipynb
-
-#### Data is collected from cryptocurrency APIs and parse to h5py file:
-1. DataCollection.ipynb
-2. PastSampler.ipynb
+### Legacy Files
+The original `CNN.py`, `LSTM.py`, `GRU.py`, and notebook files remain in the repo for reference, but the new pipeline is the recommended workflow.
 
 ### Run
-To run the prediction model, select one of the model. For instance, 
+Use the new pipeline for up-to-date predictions:
 ```
-python CNN.py
+python data_fetch.py
+python feature_engineering.py
+python train_models.py
+python predict_plot.py
 ```
-To run iPython file, you need to run jupyter notebook
-```
-jupyter notebook
-```
-__Be sure to run DataCollection.ipynb and PastSampler.ipynb first to create database for training models.__
 
-**Note:** Poloniex API is no longer available. `DataCollection.ipynb` now uses the Binance free REST API to fetch recent BTC/USDT 5-minute data from 2022 onward.
+> The legacy notebooks and old data collection scripts are deprecated. Use Binance API scripts in the new pipeline.
 ### Input & Output & Loss
 The input consists of a list of past Bitcoin data with step size of 256.
 The output is the predicted value of the future data with step size of 16. Note that since the data is ticked every five minutes, the input data spans over the past 1280 minutes, while the output cover the future 80 minutes. The datas are scaled with MinMaxScaler provided by sklearn over the entire dataset. The loss is defined as Mean Square Error (MSE).
