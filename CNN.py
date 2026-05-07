@@ -1,14 +1,16 @@
 import pandas as pd
 import numpy as numpy
-from keras.models import Sequential
-from keras.layers import Dense, Dropout, Activation, Flatten
-from keras.layers import Conv1D, MaxPooling1D, LeakyReLU, PReLU
-from keras.utils import np_utils
-from keras.callbacks import CSVLogger, ModelCheckpoint
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout, Activation, Flatten
+from tensorflow.keras.layers import Conv1D, MaxPooling1D, LeakyReLU, PReLU
+from tensorflow.keras.utils import np_utils
+from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint
 import h5py
 import os
 import tensorflow as tf
-from keras.backend.tensorflow_backend import set_session
+from tensorflow.compat.v1.keras.backend import set_session
+
+tf.compat.v1.disable_eager_execution()
 
 
 # Use CNN to capture local temporal dependency of data in risk prediction or other related tasks.
@@ -16,17 +18,17 @@ os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
 os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
 
-config = tf.ConfigProto()
+config = tf.compat.v1.ConfigProto()
 config.gpu_options.allow_growth = True
-set_session(tf.Session(config=config))
+set_session(tf.compat.v1.Session(config=config))
 
 
-with h5py.File(''.join(['bitcoin2015to2017_close.h5']), 'r') as hf:
-    datas = hf['inputs'].value
-    labels = hf['outputs'].value
+with h5py.File(''.join(['bitcoin2022to2026_close.h5']), 'r') as hf:
+    datas = hf['inputs'][()]
+    labels = hf['outputs'][()]
 
 
-output_file_name='bitcoin2015to2017_close_CNN_2_relu'
+output_file_name='bitcoin2022to2026_close_CNN_2_relu'
 
 step_size = datas.shape[1]
 batch_size= 8

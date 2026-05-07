@@ -4,44 +4,38 @@
 # In[1]:
 
 
-from keras import applications
-from keras.models import Sequential
-from keras.models import Model
-from keras.layers import Dropout, Flatten, Dense, Activation, Reshape, LeakyReLU
-from keras.callbacks import CSVLogger
+from tensorflow.keras import applications
+from tensorflow.keras.models import Sequential, Model
+from tensorflow.keras.layers import Dropout, Flatten, Dense, Activation, Reshape, LeakyReLU, LSTM, CuDNNLSTM, Conv1D, MaxPooling1D
+from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint
+from tensorflow.keras import backend as K
+from tensorflow.compat.v1.keras.backend import set_session
+from tensorflow.keras import optimizers, regularizers
 import tensorflow as tf
-from scipy.ndimage import imread
 import numpy as np
 import random
-from keras.layers import LSTM, CuDNNLSTM
-from keras.layers import Conv1D, MaxPooling1D
-from keras import backend as K
-import keras
-from keras.callbacks import CSVLogger, ModelCheckpoint
-from keras.backend.tensorflow_backend import set_session
-from keras import optimizers
 import h5py
 from sklearn.preprocessing import MinMaxScaler
 import os
 import pandas as pd
 # import matplotlib
-import h5py
-from keras import regularizers
 from sklearn.metrics import mean_squared_error
 import matplotlib.pyplot as plt
+
+tf.compat.v1.disable_eager_execution()
 
 
 # In[2]:
 
 
-with h5py.File(''.join(['bitcoin2015to2017_close.h5']), 'r') as hf:
-    datas = hf['inputs'].value
-    labels = hf['outputs'].value
-    input_times = hf['input_times'].value
-    output_times = hf['output_times'].value
-    original_inputs = hf['original_inputs'].value
-    original_outputs = hf['original_outputs'].value
-    original_datas = hf['original_datas'].value
+with h5py.File(''.join(['bitcoin2022to2026_close.h5']), 'r') as hf:
+    datas = hf['inputs'][()]
+    labels = hf['outputs'][()]
+    input_times = hf['input_times'][()]
+    output_times = hf['output_times'][()]
+    original_inputs = hf['original_inputs'][()]
+    original_outputs = hf['original_outputs'][()]
+    original_datas = hf['original_datas'][()]
 
 
 # In[3]:
@@ -77,9 +71,9 @@ os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
 # In[6]:
 
 
-config = tf.ConfigProto()
+config = tf.compat.v1.ConfigProto()
 config.gpu_options.allow_growth = True
-set_session(tf.Session(config=config))
+set_session(tf.compat.v1.Session(config=config))
 
 
 # In[7]:
@@ -87,10 +81,8 @@ set_session(tf.Session(config=config))
 
 ground_true = np.append(validation_original_inputs,validation_original_outputs, axis=1)
 ground_true_times = np.append(validation_input_times,validation_output_times, axis=1)
-print ground_true_times.shape
-print ground_true.shape
-
-
+print(ground_true_times.shape)
+print(ground_true.shape)
 # In[8]:
 
 
@@ -157,7 +149,7 @@ results = pd.DataFrame()
 for reg in regs:
     
     name = ('l1 %.4f,l2 %.4f' % (reg.l1, reg.l2))
-    print "Training "+ str(name)
+    print("Training " + str(name))
     results[name] = experiment(validation_datas,validation_labels,original_datas,ground_true,ground_true_times,validation_original_outputs, validation_output_times, nb_repeat,reg)
 # print(results.describe())
 # save boxplot
@@ -191,7 +183,7 @@ results = pd.DataFrame()
 for reg in regs:
     
     name = ('l1 %.4f,l2 %.4f' % (reg.l1, reg.l2))
-    print "Training "+ str(name)
+    print("Training " + str(name))
     results[name] = experiment(validation_datas,validation_labels,original_datas,ground_true,ground_true_times,validation_original_outputs, validation_output_times, nb_repeat,reg)
 
 results.describe().to_csv('result/lstm_kernel_reg.csv')
@@ -224,7 +216,7 @@ results = pd.DataFrame()
 for reg in regs:
     
     name = ('l1 %.4f,l2 %.4f' % (reg.l1, reg.l2))
-    print "Training "+ str(name)
+    print("Training " + str(name))
     results[name] = experiment(validation_datas,validation_labels,original_datas,ground_true,ground_true_times,validation_original_outputs, validation_output_times, nb_repeat,reg)
 
 results.describe().to_csv('result/lstm_activity_reg.csv')
@@ -257,7 +249,7 @@ results = pd.DataFrame()
 for reg in regs:
     
     name = ('l1 %.4f,l2 %.4f' % (reg.l1, reg.l2))
-    print "Training "+ str(name)
+    print("Training " + str(name))
     results[name] = experiment(validation_datas,validation_labels,original_datas,ground_true,ground_true_times,validation_original_outputs, validation_output_times, nb_repeat,reg)
 
 results.describe().to_csv('result/lstm_recurrent_reg.csv')

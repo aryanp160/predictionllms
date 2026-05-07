@@ -1,29 +1,31 @@
 import pandas as pd
 import numpy as numpy
-from keras.models import Sequential
-from keras.layers import Dense, Dropout, Activation, Flatten,Reshape
-from keras.layers import Conv1D, MaxPooling1D
-from keras.utils import np_utils
-from keras.layers import LSTM, LeakyReLU, CuDNNLSTM
-from keras.callbacks import CSVLogger, ModelCheckpoint
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout, Activation, Flatten,Reshape
+from tensorflow.keras.layers import Conv1D, MaxPooling1D
+from tensorflow.keras.utils import np_utils
+from tensorflow.keras.layers import LSTM, LeakyReLU, CuDNNLSTM
+from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint
 import h5py
 import os
 import tensorflow as tf
-from keras.backend.tensorflow_backend import set_session
-from keras import regularizers
+from tensorflow.compat.v1.keras.backend import set_session
+from tensorflow.keras import regularizers
+
+tf.compat.v1.disable_eager_execution()
 
 
 os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
 os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
 
-config = tf.ConfigProto()
+config = tf.compat.v1.ConfigProto()
 config.gpu_options.allow_growth = True
-set_session(tf.Session(config=config))
+set_session(tf.compat.v1.Session(config=config))
 
-with h5py.File(''.join(['data/bitcoin2015to2017_close.h5']), 'r') as hf:
-    datas = hf['inputs'].value
-    labels = hf['outputs'].value
+with h5py.File(''.join(['data/bitcoin2022to2026_close.h5']), 'r') as hf:
+    datas = hf['inputs'][()]
+    labels = hf['outputs'][()]
 
 
 
@@ -36,7 +38,7 @@ nb_features = datas.shape[2]
 epochs = 50
 output_size=16
 reg = 1
-output_file_name='bitcoin2015to2017_close_LSTM_1_tanh_leaky_areg_l1_'+ str(reg)
+output_file_name='bitcoin2022to2026_close_LSTM_1_tanh_leaky_areg_l1_'+ str(reg)
 #split training validation
 training_size = int(0.8* datas.shape[0])
 training_datas = datas[:training_size,:]

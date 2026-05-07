@@ -1,0 +1,7 @@
+numpy==2.0.2
+pandas==2.2.3
+h5py==3.12.1
+scikit-learn==1.5.2
+matplotlib==3.10.7
+scipy==1.14.1
+tensorflow==2.18.0

@@ -34,7 +34,7 @@ To run this repo, be sure to install the following environment and library:
 2. Plot_GRU.ipynb
 3. Plot_CNN.ipynb
 
-#### Data is collected from [poloniex](https://poloniex.com) and parse to h5py file:
+#### Data is collected from cryptocurrency APIs and parse to h5py file:
 1. DataCollection.ipynb
 2. PastSampler.ipynb
 
@@ -48,6 +48,8 @@ To run iPython file, you need to run jupyter notebook
 jupyter notebook
 ```
 __Be sure to run DataCollection.ipynb and PastSampler.ipynb first to create database for training models.__
+
+**Note:** Poloniex API is no longer available. `DataCollection.ipynb` now uses the Binance free REST API to fetch recent BTC/USDT 5-minute data from 2022 onward.
 ### Input & Output & Loss
 The input consists of a list of past Bitcoin data with step size of 256.
 The output is the predicted value of the future data with step size of 16. Note that since the data is ticked every five minutes, the input data spans over the past 1280 minutes, while the output cover the future 80 minutes. The datas are scaled with MinMaxScaler provided by sklearn over the entire dataset. The loss is defined as Mean Square Error (MSE).
