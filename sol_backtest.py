@@ -1,5 +1,6 @@
 
 
+import os
 import requests
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -19,9 +20,17 @@ INTERVAL = "5m"
 
 LOOKBACK_DAYS = 365
 
-CAPITAL = 1000
+STARTING_CAPITAL = 1500
 
-LEVERAGE = 15
+LEVERAGE = 25
+
+# ============================================================
+# ENABLE / DISABLE
+# ============================================================
+
+ENABLE_LONGS = False
+
+ENABLE_SHORTS = True
 
 # ============================================================
 # LONG SETTINGS
@@ -34,26 +43,24 @@ LONG_SL_PERCENT = 7
 # SHORT SETTINGS
 # ============================================================
 
-SHORT_TP_PERCENT = 15
-SHORT_SL_PERCENT = 10
+SHORT_TP_PERCENT = 20
+SHORT_SL_PERCENT = 5
 
 # ============================================================
 # FEES
 # ============================================================
 
-FEES_PERCENT = 1
+FEES_PERCENT = 2
 
 # ============================================================
-# DOWNLOAD DATA
+# DATABASE FILE
 # ============================================================
-
-# ============================================================
-# DOWNLOAD / LOAD SAVED DATA
-# ============================================================
-
-import os
 
 DATA_FILE = f"{SYMBOL}_{INTERVAL}_candles.csv"
+
+# ============================================================
+# DOWNLOAD / LOAD DATA
+# ============================================================
 
 def get_binance_data():
 
@@ -63,10 +70,7 @@ def get_binance_data():
 
     url = "https://api.binance.com/api/v3/klines"
 
-    # ========================================================
     # LOAD EXISTING DATA
-    # ========================================================
-
     if os.path.exists(DATA_FILE):
 
         print("Loading saved candles...")
@@ -82,7 +86,6 @@ def get_binance_data():
             f"{len(existing_df)}"
         )
 
-        # LAST SAVED CANDLE
         last_timestamp = int(
             pd.Timestamp(
                 existing_df['time'].iloc[-1]
@@ -105,20 +108,13 @@ def get_binance_data():
             ).timestamp() * 1000
         )
 
-    # ========================================================
-    # CURRENT TIME
-    # ========================================================
-
     end_time = int(
         datetime.now().timestamp() * 1000
     )
 
     all_new_data = []
 
-    # ========================================================
-    # DOWNLOAD ONLY NEW CANDLES
-    # ========================================================
-
+    # DOWNLOAD ONLY NEW DATA
     while start_time < end_time:
 
         params = {
@@ -147,20 +143,14 @@ def get_binance_data():
             f"{len(all_new_data)} new candles..."
         )
 
-    # ========================================================
-    # IF NO NEW DATA
-    # ========================================================
-
+    # NO NEW DATA
     if len(all_new_data) == 0:
 
         print("\nNo new candles needed.")
 
         return existing_df
 
-    # ========================================================
-    # CREATE NEW DATAFRAME
-    # ========================================================
-
+    # CREATE DATAFRAME
     new_df = pd.DataFrame(all_new_data, columns=[
         'time',
         'open',
@@ -195,10 +185,7 @@ def get_binance_data():
             new_df[col]
         )
 
-    # ========================================================
     # MERGE OLD + NEW
-    # ========================================================
-
     if len(existing_df) > 0:
 
         df = pd.concat([
@@ -219,10 +206,7 @@ def get_binance_data():
         by='time'
     )
 
-    # ========================================================
-    # SAVE DATABASE
-    # ========================================================
-
+    # SAVE
     df.to_csv(
         DATA_FILE,
         index=False
@@ -238,6 +222,7 @@ def get_binance_data():
     )
 
     return df
+
 # ============================================================
 # INDICATORS
 # ============================================================
@@ -383,7 +368,7 @@ def backtest(df):
 
     print("Running backtest...")
 
-    balance = 0
+    balance = STARTING_CAPITAL
 
     equity_curve = []
 
@@ -395,15 +380,15 @@ def backtest(df):
 
     trade_type = None
 
-    entry_price = 0
-
-    tp_price = 0
-
-    sl_price = 0
-
     for i in range(200, len(df)):
 
         row = df.iloc[i]
+
+        # ====================================================
+        # 50% COMPOUNDING
+        # ====================================================
+
+        trade_capital = balance * 0.8
 
         # ====================================================
         # ENTRY
@@ -412,7 +397,7 @@ def backtest(df):
         if not in_trade:
 
             # LONG
-            if long_condition(df, i):
+            if ENABLE_LONGS and long_condition(df, i):
 
                 in_trade = True
 
@@ -448,10 +433,8 @@ def backtest(df):
                     "entry": entry_price
                 })
 
-              
-
             # SHORT
-            elif short_condition(df, i):
+            elif ENABLE_SHORTS and short_condition(df, i):
 
                 in_trade = True
 
@@ -487,8 +470,6 @@ def backtest(df):
                     "entry": entry_price
                 })
 
-                
-
         # ====================================================
         # TRADE MANAGEMENT
         # ====================================================
@@ -497,17 +478,14 @@ def backtest(df):
 
             current_price = row['close']
 
-            # =================================================
             # LONG
-            # =================================================
-
             if trade_type == "LONG":
 
                 # TP
                 if current_price >= tp_price:
 
                     gross_profit = (
-                        CAPITAL
+                        trade_capital
                         *
                         (LONG_TP_PERCENT / 100)
                     )
@@ -526,11 +504,7 @@ def backtest(df):
 
                     balance += net_profit
 
-                    trades[-1]['exit'] = current_price
-
                     trades[-1]['pnl'] = net_profit
-
-                   
 
                     in_trade = False
 
@@ -538,7 +512,7 @@ def backtest(df):
                 elif current_price <= sl_price:
 
                     gross_loss = (
-                        CAPITAL
+                        trade_capital
                         *
                         (LONG_SL_PERCENT / 100)
                     )
@@ -557,25 +531,18 @@ def backtest(df):
 
                     balance -= total_loss
 
-                    trades[-1]['exit'] = current_price
-
                     trades[-1]['pnl'] = -total_loss
-
-                  
 
                     in_trade = False
 
-            # =================================================
             # SHORT
-            # =================================================
-
             elif trade_type == "SHORT":
 
                 # TP
                 if current_price <= tp_price:
 
                     gross_profit = (
-                        CAPITAL
+                        trade_capital
                         *
                         (SHORT_TP_PERCENT / 100)
                     )
@@ -594,11 +561,7 @@ def backtest(df):
 
                     balance += net_profit
 
-                    trades[-1]['exit'] = current_price
-
                     trades[-1]['pnl'] = net_profit
-
-                   
 
                     in_trade = False
 
@@ -606,7 +569,7 @@ def backtest(df):
                 elif current_price >= sl_price:
 
                     gross_loss = (
-                        CAPITAL
+                        trade_capital
                         *
                         (SHORT_SL_PERCENT / 100)
                     )
@@ -625,11 +588,7 @@ def backtest(df):
 
                     balance -= total_loss
 
-                    trades[-1]['exit'] = current_price
-
                     trades[-1]['pnl'] = -total_loss
-
-                  
 
                     in_trade = False
 
@@ -637,7 +596,7 @@ def backtest(df):
 
         equity_dates.append(row['time'])
 
-    return trades, equity_curve, equity_dates
+    return trades, equity_curve, equity_dates, balance
 
 # ============================================================
 # PLOT RESULTS
@@ -645,10 +604,7 @@ def backtest(df):
 
 def plot_results(df, equity_curve, equity_dates):
 
-    # ==========================================
     # EQUITY CURVE
-    # ==========================================
-
     plt.figure(figsize=(15, 7))
 
     plt.plot(
@@ -663,7 +619,7 @@ def plot_results(df, equity_curve, equity_dates):
 
     plt.xlabel("Date")
 
-    plt.ylabel("Profit (₹)")
+    plt.ylabel("Balance (₹)")
 
     plt.grid(True)
 
@@ -673,10 +629,7 @@ def plot_results(df, equity_curve, equity_dates):
 
     plt.show()
 
-    # ==========================================
-    # ETH PRICE GRAPH
-    # ==========================================
-
+    # ETH PRICE
     plt.figure(figsize=(15, 7))
 
     plt.plot(
@@ -713,12 +666,12 @@ df = get_binance_data()
 
 df = add_indicators(df)
 
-trades, equity_curve, equity_dates = backtest(df)
+trades, equity_curve, equity_dates, balance = backtest(df)
 
 trades_df = pd.DataFrame(trades)
 
 # ============================================================
-# LONG / SHORT ANALYSIS
+# RESULTS
 # ============================================================
 
 long_trades = trades_df[
@@ -729,130 +682,73 @@ short_trades = trades_df[
     trades_df['type'] == 'SHORT'
 ]
 
-# LONG STATS
-long_profit = long_trades['pnl'].sum()
-
-long_wins = len(
-    long_trades[
-        long_trades['pnl'] > 0
-    ]
-)
-
-long_losses = len(
-    long_trades[
-        long_trades['pnl'] < 0
-    ]
-)
-
-# SHORT STATS
-short_profit = short_trades['pnl'].sum()
-
-short_wins = len(
-    short_trades[
-        short_trades['pnl'] > 0
-    ]
-)
-
-short_losses = len(
-    short_trades[
-        short_trades['pnl'] < 0
-    ]
-)
-
-# ============================================================
-# PRINT RESULTS
-# ============================================================
-
 print("\n========== LONG STATS ==========")
 
-print(
-    f"Total Long Trades: "
-    f"{len(long_trades)}"
-)
-
-print(
-    f"Long Wins: "
-    f"{long_wins}"
-)
-
-print(
-    f"Long Losses: "
-    f"{long_losses}"
-)
+print(f"Total Long Trades: {len(long_trades)}")
 
 print(
     f"Long Profit: "
-    f"₹{round(long_profit,2)}"
+    f"₹{round(long_trades['pnl'].sum(),2)}"
 )
 
 print("\n========== SHORT STATS ==========")
 
-print(
-    f"Total Short Trades: "
-    f"{len(short_trades)}"
-)
-
-print(
-    f"Short Wins: "
-    f"{short_wins}"
-)
-
-print(
-    f"Short Losses: "
-    f"{short_losses}"
-)
+print(f"Total Short Trades: {len(short_trades)}")
 
 print(
     f"Short Profit: "
-    f"₹{round(short_profit,2)}"
+    f"₹{round(short_trades['pnl'].sum(),2)}"
 )
 
 print("\n====================================")
 print("FINAL RESULTS")
 print("====================================")
 
-print(f"Total Trades: {len(trades_df)}")
+wins = len(
+    trades_df[
+        trades_df['pnl'] > 0
+    ]
+)
 
-if len(trades_df) > 0:
+losses = len(
+    trades_df[
+        trades_df['pnl'] < 0
+    ]
+)
 
-    wins = len(
-        trades_df[
-            trades_df['pnl'] > 0
-        ]
-    )
+winrate = (
+    wins / len(trades_df)
+) * 100 if len(trades_df) > 0 else 0
 
-    losses = len(
-        trades_df[
-            trades_df['pnl'] < 0
-        ]
-    )
+total_profit = (
+    trades_df['pnl'].sum()
+)
 
-    winrate = (
-        wins / len(trades_df)
-    ) * 100
+print(f"Starting Capital: ₹{STARTING_CAPITAL}")
 
-    total_profit = trades_df['pnl'].sum()
+print(
+    f"Final Balance: "
+    f"₹{round(balance,2)}"
+)
 
-    avg_trade = trades_df['pnl'].mean()
+print(
+    f"Total Trades: "
+    f"{len(trades_df)}"
+)
 
-    print(f"Wins: {wins}")
+print(f"Wins: {wins}")
 
-    print(f"Losses: {losses}")
+print(f"Losses: {losses}")
 
-    print(
-        f"Win Rate: "
-        f"{round(winrate,2)}%"
-    )
+print(
+    f"Win Rate: "
+    f"{round(winrate,2)}%"
+)
 
-    print(
-        f"Total Profit: "
-        f"₹{round(total_profit,2)}"
-    )
-
-    print(
-        f"Average Trade: "
-        f"₹{round(avg_trade,2)}"
-    )
+print(
+    f"Total Profit: "
+    f"₹{round(total_profit,2)}"
+)
 
 # ============================================================
 # PLOT
