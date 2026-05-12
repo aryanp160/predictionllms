@@ -25,6 +25,20 @@ This repo has been modernized for Python 3.x and TensorFlow 2.x using Binance hi
 4. `python predict_plot.py`
    - loads trained models, produces ensemble forecasts, confidence bands, and saves charts/CSV to `result/`.
 
+### New Features
+- **Modern TensorFlow 2.x**: Updated from deprecated TF1 patterns to current TF2/Keras API.
+- **Binance API Integration**: Real-time data fetching from Binance instead of deprecated Poloniex.
+- **Technical Indicators**: RSI, MACD, EMA, SMA, Bollinger Bands, ATR, VWAP for enhanced feature engineering.
+- **Ensemble Predictions**: Combines CNN, LSTM, and GRU forecasts with confidence intervals.
+- **Individual Model Forecasts**: Separate scripts for CNN, LSTM, and GRU predictions.
+- **Data Timeframe**: Uses last 6 months of 15-minute BTC/USDT data for current market relevance.
+
+### Individual Forecast Scripts
+For individual model predictions (faster than full ensemble):
+- `python run_gru_forecast.py` → GRU forecast chart and CSV
+- `python run_cnn_forecast.py` → CNN forecast chart and CSV  
+- `python run_lstm_forecast.py` → LSTM forecast chart and CSV
+
 ### Legacy Files
 The original `CNN.py`, `LSTM.py`, `GRU.py`, and notebook files remain in the repo for reference, but the new pipeline is the recommended workflow.
 
@@ -37,10 +51,25 @@ python train_models.py
 python predict_plot.py
 ```
 
+For individual model forecasts (faster execution):
+```
+python run_gru_forecast.py
+python run_cnn_forecast.py
+python run_lstm_forecast.py
+```
+
 > The legacy notebooks and old data collection scripts are deprecated. Use Binance API scripts in the new pipeline.
 ### Input & Output & Loss
 The input consists of a list of past Bitcoin data with step size of 256.
 The output is the predicted value of the future data with step size of 16. Note that since the data is ticked every five minutes, the input data spans over the past 1280 minutes, while the output cover the future 80 minutes. The datas are scaled with MinMaxScaler provided by sklearn over the entire dataset. The loss is defined as Mean Square Error (MSE).
+
+### Modernized Architecture
+The new pipeline uses:
+- **Data Source**: Binance REST API for 15m and 1h BTC/USDT candles (last 6 months)
+- **Features**: OHLCV + 7 technical indicators (RSI, MACD, EMA, SMA, Bollinger Bands, ATR, VWAP)
+- **Models**: CNN (Conv1D), LSTM, GRU with dropout, early stopping, and learning rate scheduling
+- **Training**: 30 epochs with validation, best model checkpointing
+- **Prediction**: Ensemble averaging with confidence intervals, professional matplotlib charts
 
 ### Result
 |Model | #Layers  |  Activation    | Validation Loss   |Test Loss (Scale Inverted) |
