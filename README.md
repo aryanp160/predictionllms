@@ -116,3 +116,10 @@ _Linear Regression_
 
 ## Update
 Regularization has been done, which can be viewed in PlotRegularization.ipynb.
+
+
+## Acknowledgements
+
+This project is based on and extends an existing open-source cryptocurrency prediction and backtesting repository.
+
+Additional modifications, Python 3 migration, strategy experimentation, indicator integration, optimization, and trading logic improvements were implemented independently as part of this project.

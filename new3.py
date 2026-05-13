@@ -36,7 +36,7 @@ SHORT_SL_PERCENT = 5
 # FEES
 # ============================================================
 
-FEES_PERCENT = 4
+FEES_PERCENT = 2
 
 # ============================================================
 # COMPOUNDING
@@ -55,7 +55,7 @@ SPREAD_PERCENT = 0.04
 SLIPPAGE_PERCENT = 0.08
 
 # Liquidation safety
-LIQUIDATION_BUFFER = 0.8
+LIQUIDATION_BUFFER = 0
 
 # Stop after too many losses
 MAX_CONSECUTIVE_LOSSES_ALLOWED = 50
